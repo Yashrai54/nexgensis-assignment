@@ -44,3 +44,22 @@ export const getProducts = async (
 
   return response.data;
 };
+
+export const searchProducts = async (
+  query: string,
+  limit: number,
+  skip: number
+): Promise<ProductsResponse> => {
+  const response = await apiClient.get<ProductsResponse>(
+    "/products/search",
+    {
+      params: {
+        q: query,
+        limit,
+        skip,
+      },
+    }
+  );
+
+  return response.data;
+};
