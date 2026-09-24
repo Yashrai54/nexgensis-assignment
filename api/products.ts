@@ -31,6 +31,12 @@ export interface ProductsResponse {
   limit: number;
 }
 
+export interface ProductCategory {
+  slug: string;
+  name: string;
+  url: string;
+}
+
 export const getProducts = async (
   limit: number,
   skip: number
@@ -63,3 +69,25 @@ export const searchProducts = async (
 
   return response.data;
 };
+
+export const getCategories = async (): Promise<ProductCategory[]> => {
+  const response = await apiClient.get<ProductCategory[]>(
+    "/products/categories"
+  );
+
+  return response.data;
+};
+
+export const getProductByCategories = async(category:string,limit:number,skip:number)
+:Promise<ProductsResponse>=>{
+    const response = await apiClient.get<ProductsResponse>(
+        `/products/category/${category}`,
+        {
+          params:{
+            limit,
+            skip
+          }
+        }
+    )
+    return response.data
+}
