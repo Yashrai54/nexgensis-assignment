@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState,useCallback } from "react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ProductTable from "@/components/products/ProductTable";
 import { getCategories, getProducts, Product, searchProducts, ProductCategory, getProductByCategories, addProduct } from "@/api/products";
@@ -70,15 +70,15 @@ const ProductsPage = () => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                setIsLoading(true)
-                setError("")
+                setIsCategoriesLoading(true)
+                setCategoriesError("")
 
                 const data = await getCategories()
                 setCategories(data)
             } catch {
-                setError("failed to load categories")
+                setCategoriesError("failed to load categories")
             } finally {
-                setIsLoading(false)
+                setIsCategoriesLoading(false)
             }
         }
         fetchCategories()
@@ -182,59 +182,66 @@ const ProductsPage = () => {
     };
 
     const [isLoading, setIsLoading] = useState(true);
+    const [isCategoriesLoading, setIsCategoriesLoading] = useState(true); // categories loading
+
     const [error, setError] = useState("");
+    const [categoriesError,setCategoriesError] = useState("")
+
+    const fetchProducts = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError("");
+
+            let data;
+
+            if (category === "") {
+                data = query.trim()
+                    ? await searchProducts(query, limit, skip, sortBy, order)
+                    : await getProducts(limit, skip, sortBy, order);
+            } else {
+                data = await getProductByCategories(
+                    category,
+                    limit,
+                    skip,
+                    sortBy,
+                    order
+                );
+            }
+
+            const merged = applyOverridesToList(data.products, data.total);
+
+            const showAdded =
+                pageIndex === 1 && category === "" && query.trim() === "" && sortBy === "";
+
+            const finalProducts = showAdded
+                ? [...getLocallyAddedProducts(), ...merged.products]
+                : merged.products;
+
+            setProducts(finalProducts);
+
+
+            setTotal(merged.total);
+        } catch {
+            setError("Failed to load products.");
+        } finally {
+            setIsLoading(false);
+        }
+    },[query,limit,skip,pageIndex,category,sortBy,order])
 
     useEffect(() => {
         const timer = setTimeout(async () => {
-            try {
-                setIsLoading(true);
-                setError("");
-
-                let data;
-
-                if (category === "") {
-                    data = query.trim()
-                        ? await searchProducts(query, limit, skip, sortBy, order)
-                        : await getProducts(limit, skip, sortBy, order);
-                } else {
-                    data = await getProductByCategories(
-                        category,
-                        limit,
-                        skip,
-                        sortBy,
-                        order
-                    );
-                }
-
-                const merged = applyOverridesToList(data.products, data.total);
-
-                const showAdded =
-                    pageIndex === 1 && category === "" && query.trim() === "" && sortBy === "";
-
-                const finalProducts = showAdded
-                    ? [...getLocallyAddedProducts(), ...merged.products]
-                    : merged.products;
-
-                setProducts(finalProducts);
-
-
-                setTotal(merged.total);
-            } catch {
-                setError("Failed to load products.");
-            } finally {
-                setIsLoading(false);
-            }
+            fetchProducts()
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [query, limit, pageIndex, category, sortBy, order]);
+    }, [fetchProducts]);
 
 
     return (
         <ProtectedRoute>
             <main className="min-h-screen bg-black p-8">
                 <div className="mx-auto max-w-7xl">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col md:flex-row justify-between items-center">
                         <div className="mb-6">
                             <h1 className="text-3xl font-mono font-semibold">
                                 Products
@@ -245,9 +252,9 @@ const ProductsPage = () => {
                             </p>
                         </div>
                         {isAddModalOpen && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                            <div className="fixed inset-0 z-50  flex items-center justify-center bg-black/60 p-4">
                                 <div className="w-full max-w-md rounded-lg bg-white p-6 text-black">
-                                    <h2 className="mb-4 text-xl font-semibold font-mono">
+                                    <h2 className="mb-4 text-xl font-semibold font-mono ">
                                         Add Product
                                     </h2>
 
@@ -318,6 +325,7 @@ const ProductsPage = () => {
                                         <div>
                                             <label className="mb-1 block text-sm">Category</label>
                                             <select
+                                                disabled={isCategoriesLoading}
                                                 value={addForm.category}
                                                 onChange={(e) =>
                                                     setAddForm({ ...addForm, category: e.target.value })
@@ -333,11 +341,11 @@ const ProductsPage = () => {
                                             </select>
                                         </div>
 
-                                        <div className="flex gap-3 pt-2">
+                                        <div className="flex gap-3 pt-2 ">
                                             <button
                                                 type="submit"
                                                 disabled={isAdding}
-                                                className="flex-1 rounded bg-yellow-500 py-2 disabled:opacity-50"
+                                                className="flex-1 rounded bg-yellow-500 py-2 disabled:opacity-50 "
                                             >
                                                 {isAdding ? "Adding..." : "Add Product"}
                                             </button>
@@ -356,7 +364,7 @@ const ProductsPage = () => {
                                 </div>
                             </div>
                         )}
-                        <div className="flex gap-5">
+                        <div className="flex flex-col md:flex-row mb-10 md:mb-0 gap-5">
                             <input type="search" name="Search Products" id="search products"
                                 placeholder="search for products"
                                 value={query}
@@ -464,14 +472,19 @@ const ProductsPage = () => {
                     )}
 
                     {!isLoading && !error && (
-                        <ProductTable
-                            products={products}
-                            total={total}
-                            limit={limit}
-                            pageIndex={pageIndex}
-                            onPageChange={handlePageChange}
-                            onLimitChange={handleLimitChange}
-                        />)}
+                        products.length === 0 ? (
+                            <div className="text-2xl text-white font-mono m-auto">
+                                No Products Found
+                            </div>
+                        ) :
+                            <ProductTable
+                                products={products}
+                                total={total}
+                                limit={limit}
+                                pageIndex={pageIndex}
+                                onPageChange={handlePageChange}
+                                onLimitChange={handleLimitChange}
+                            />)}
                     {!isLoading && !error && (
                         <ProductCardList
                             products={products}

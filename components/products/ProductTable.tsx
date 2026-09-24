@@ -2,7 +2,7 @@
 
 "use client";
 
-import { Product,deleteProduct } from "@/api/products";
+import { Product, deleteProduct } from "@/api/products";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -26,11 +26,12 @@ const ProductTable = ({
     onLimitChange
 }: ProductTableProps) => {
     const totalPages = Math.ceil(total / limit);
-  
-    const [error,setError] = useState("")
+
+    const [error, setError] = useState("")
 
     return (
         <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 font-mono">
+
             <table className="w-full min-w-200 text-left">
                 <thead className="bg-yellow-500 text-white">
                     <tr>
@@ -41,6 +42,8 @@ const ProductTable = ({
                         <th className="px-4 py-3 text-sm font-medium">Stock</th>
                     </tr>
                 </thead>
+
+              
 
                 <tbody>
                     {products.map((product) => (
@@ -75,7 +78,7 @@ const ProductTable = ({
                             <td className="px-4 py-3">
                                 {product.stock}
                             </td>
-                            
+
                         </tr>
                     ))}
                 </tbody>

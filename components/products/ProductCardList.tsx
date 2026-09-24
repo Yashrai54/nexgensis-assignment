@@ -1,6 +1,8 @@
 "use client";
 
 import { Product } from "@/api/products";
+import Link from "next/link";
+import image2 from "../../app/assets/image2.png";
 
 interface ProductCardListProps {
     products: Product[];
@@ -30,14 +32,17 @@ const ProductCardList = ({
                 >
                     <div className="flex items-center gap-3">
                         <img
-                            src={product.thumbnail}
+                            src={product?.thumbnail || image2.src}
                             alt={product.title}
                             className="h-14 w-14 flex-shrink-0 rounded border bg-white object-cover"
                         />
 
-                        <span className="font-medium text-white">
+                        <Link
+                            className="font-medium text-white"
+                            href={`/products/${product.id}`}
+                        >
                             {product.title}
-                        </span>
+                        </Link>
                     </div>
 
                     <dl className="mt-4 grid grid-cols-2 gap-y-2 text-sm text-white">
