@@ -2,8 +2,11 @@
 
 "use client";
 
-import { Product } from "@/api/products";
+import { Product,deleteProduct } from "@/api/products";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { useState } from "react";
+import image2 from "../../app/assets/image2.png"
 
 interface ProductTableProps {
     products: Product[];
@@ -23,6 +26,9 @@ const ProductTable = ({
     onLimitChange
 }: ProductTableProps) => {
     const totalPages = Math.ceil(total / limit);
+  
+    const [error,setError] = useState("")
+
     return (
         <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 font-mono">
             <table className="w-full min-w-200 text-left">
@@ -39,10 +45,11 @@ const ProductTable = ({
                 <tbody>
                     {products.map((product) => (
                         <tr key={product.id} className="border-t">
+
                             <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
                                     <img
-                                        src={product.thumbnail}
+                                        src={product?.thumbnail || image2.src}
                                         alt={product.title}
                                         className="h-12 w-12 rounded object-cover border bg-white"
                                     />
@@ -68,6 +75,7 @@ const ProductTable = ({
                             <td className="px-4 py-3">
                                 {product.stock}
                             </td>
+                            
                         </tr>
                     ))}
                 </tbody>

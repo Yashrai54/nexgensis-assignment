@@ -114,3 +114,21 @@ export const getProductById = async(id:number):Promise<Product>=>{
 
     return response.data
 }   
+
+export const addProduct = async(product:Partial<Product>):Promise<Product>=>{
+  const response = await apiClient.post("/products/add",product)
+
+  return response.data
+
+}
+
+export const updateProduct = async(id:number, Product:Partial<Product>):Promise<Product>=>{
+    const response = await apiClient.put<Product>(`/products/${id}`,Product)
+
+    return response.data
+}
+
+export const deleteProduct = async(id:number):Promise<Product>=>{
+  const response = await apiClient.delete(`/products/${id}`)
+  return response.data
+}

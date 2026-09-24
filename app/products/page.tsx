@@ -3,17 +3,30 @@
 import { useEffect, useState } from "react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ProductTable from "@/components/products/ProductTable";
-import { getCategories, getProducts, Product, searchProducts, ProductCategory, getProductByCategories } from "@/api/products";
+import { getCategories, getProducts, Product, searchProducts, ProductCategory, getProductByCategories, addProduct } from "@/api/products";
 import ProductCardList from "@/components/products/ProductCardList";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { applyOverridesToList, getLocallyAddedProducts, recordAddedProduct, generateLocalId } from "@/lib/productOverrides";
 
 const ProductsPage = () => {
     const [products, setProducts] = useState<Product[]>([]);
+    const [addedProducts, setAddedProducts] = useState<Product[]>([]);
 
     const searchParams = useSearchParams()
+    const [isAdding, setIsAdding] = useState(false)
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [limit, setLimit] = useState(
         Number(searchParams.get("limit")) || 10
     );
+
+    const [addForm, setAddForm] = useState({
+        title: "",
+        price: "",
+        stock: "",
+        description: "",
+        category: "",
+    });
+    const [addFormError, setAddFormError] = useState("");
 
     const [pageIndex, setPageIndex] = useState(
         Number(searchParams.get("page")) || 1
@@ -78,6 +91,66 @@ const ProductsPage = () => {
         });
     }
 
+
+    const handleAddProduct = async (event: React.SubmitEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!addForm.title.trim()) {
+            setAddFormError("Title is required.");
+            return;
+        }
+
+        if (!addForm.description.trim()) {
+            setAddFormError("Description is required.");
+            return;
+        }
+
+        const priceNum = Number(addForm.price);
+        const stockNum = Number(addForm.stock);
+
+        if (addForm.price === "" || Number.isNaN(priceNum) || priceNum < 0) {
+            setAddFormError("Price is required and cannot be negative.");
+            return;
+        }
+
+        if (addForm.stock === "" || Number.isNaN(stockNum) || stockNum < 0) {
+            setAddFormError("Stock is required and cannot be negative.");
+            return;
+        }
+
+        try {
+            setIsAdding(true);
+            setAddFormError("");
+
+            const newProduct = await addProduct({
+                title: addForm.title,
+                price: priceNum,
+                stock: stockNum,
+                description: addForm.description,
+                category: addForm.category || undefined,
+            });
+
+            const persistedProduct: Product = {
+                ...newProduct,
+                id: generateLocalId(),
+            };
+            recordAddedProduct(persistedProduct);
+
+
+            setAddedProducts((current) => [
+                newProduct,
+                ...current,
+            ]);
+
+            setProducts((currentProducts) => [persistedProduct, ...currentProducts]);
+            setIsAddModalOpen(false);
+            setAddForm({ title: "", price: "", stock: "", description: "", category: "" });
+        } catch {
+            setAddFormError("Failed to add product.");
+        } finally {
+            setIsAdding(false);
+        }
+    };
     const handleLimitChange = (newLimit: number) => {
         setLimit(newLimit);
         setPageIndex(1);
@@ -133,8 +206,19 @@ const ProductsPage = () => {
                     );
                 }
 
-                setProducts(data.products);
-                setTotal(data.total);
+                const merged = applyOverridesToList(data.products, data.total);
+
+                const showAdded =
+                    pageIndex === 1 && category === "" && query.trim() === "" && sortBy === "";
+
+                const finalProducts = showAdded
+                    ? [...getLocallyAddedProducts(), ...merged.products]
+                    : merged.products;
+
+                setProducts(finalProducts);
+
+
+                setTotal(merged.total);
             } catch {
                 setError("Failed to load products.");
             } finally {
@@ -160,6 +244,118 @@ const ProductsPage = () => {
                                 Manage your product catalog.
                             </p>
                         </div>
+                        {isAddModalOpen && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                                <div className="w-full max-w-md rounded-lg bg-white p-6 text-black">
+                                    <h2 className="mb-4 text-xl font-semibold font-mono">
+                                        Add Product
+                                    </h2>
+
+                                    {addFormError && (
+                                        <div className="mb-4 text-sm text-red-600 font-mono">
+                                            {addFormError}
+                                        </div>
+                                    )}
+
+                                    <form onSubmit={handleAddProduct} className="space-y-4 font-mono">
+                                        <div>
+                                            <label className="mb-1 block text-sm">
+                                                Title <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                value={addForm.title}
+                                                onChange={(e) =>
+                                                    setAddForm({ ...addForm, title: e.target.value })
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-sm">
+                                                Price <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={addForm.price}
+                                                onChange={(e) =>
+                                                    setAddForm({ ...addForm, price: e.target.value })
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-sm">
+                                                Stock <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={addForm.stock}
+                                                onChange={(e) =>
+                                                    setAddForm({ ...addForm, stock: e.target.value })
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-sm">
+                                                Description <span className="text-red-500">*</span>
+                                            </label>
+                                            <textarea
+                                                value={addForm.description}
+                                                onChange={(e) =>
+                                                    setAddForm({ ...addForm, description: e.target.value })
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-sm">Category</label>
+                                            <select
+                                                value={addForm.category}
+                                                onChange={(e) =>
+                                                    setAddForm({ ...addForm, category: e.target.value })
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            >
+                                                <option value="">None</option>
+                                                {categories.map((cat) => (
+                                                    <option key={cat.slug} value={cat.name}>
+                                                        {cat.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="submit"
+                                                disabled={isAdding}
+                                                className="flex-1 rounded bg-yellow-500 py-2 disabled:opacity-50"
+                                            >
+                                                {isAdding ? "Adding..." : "Add Product"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsAddModalOpen(false);
+                                                    setAddFormError("");
+                                                }}
+                                                className="flex-1 rounded border py-2"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex gap-5">
                             <input type="search" name="Search Products" id="search products"
                                 placeholder="search for products"
@@ -190,7 +386,7 @@ const ProductsPage = () => {
                                         page: 1,
                                     });
                                 }}
-                                className="rounded-md bg-white px-3 py-3 text-sm font-mono text-black"
+                                className="rounded-md bg-white  px-3 py-3 text-sm font-mono text-black"
                             >
                                 <option value="">All Categories</option>
 
@@ -245,7 +441,14 @@ const ProductsPage = () => {
                                 <option value="title-asc">Title: A to Z</option>
                                 <option value="title-desc">Title: Z to A</option>
                             </select>
+                            <button className="bg-yellow-500 py-3 w-50 font-mono rounded-md"
+                                onClick={() => setIsAddModalOpen(true)}
+                            >
+                                Add Product
+                            </button>
                         </div>
+
+
                     </div>
 
                     {isLoading && (
