@@ -3,6 +3,7 @@
 "use client";
 
 import { Product } from "@/api/products";
+import Link from "next/link";
 
 interface ProductTableProps {
     products: Product[];
@@ -24,7 +25,7 @@ const ProductTable = ({
     const totalPages = Math.ceil(total / limit);
     return (
         <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 font-mono">
-            <table className="w-full min-w-[800px] text-left">
+            <table className="w-full min-w-200 text-left">
                 <thead className="bg-yellow-500 text-white">
                     <tr>
                         <th className="px-4 py-3 text-sm font-medium">Product</th>
@@ -46,9 +47,9 @@ const ProductTable = ({
                                         className="h-12 w-12 rounded object-cover border bg-white"
                                     />
 
-                                    <span className="font-medium">
+                                    <Link className="font-medium" href={`/products/${product.id}`}>
                                         {product.title}
-                                    </span>
+                                    </Link>
                                 </div>
                             </td>
 

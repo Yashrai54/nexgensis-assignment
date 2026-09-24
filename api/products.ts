@@ -107,3 +107,10 @@ export const getProductByCategories = async (
 
   return response.data;
 };
+
+
+export const getProductById = async(id:number):Promise<Product>=>{
+    const response = await apiClient.get(`products/${id}`)
+
+    return response.data
+}   
