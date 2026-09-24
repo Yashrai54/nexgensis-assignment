@@ -39,12 +39,16 @@ export interface ProductCategory {
 
 export const getProducts = async (
   limit: number,
-  skip: number
+  skip: number,
+  sortBy?:string,
+  order?:"asc"|"desc"
 ): Promise<ProductsResponse> => {
   const response = await apiClient.get<ProductsResponse>("/products", {
     params: {
       limit,
       skip,
+      ...(sortBy && {sortBy}),
+      ...(order && ({order}))
     },
   });
 
@@ -54,7 +58,9 @@ export const getProducts = async (
 export const searchProducts = async (
   query: string,
   limit: number,
-  skip: number
+  skip: number,
+  sortBy?: string,
+  order?: "asc" | "desc"
 ): Promise<ProductsResponse> => {
   const response = await apiClient.get<ProductsResponse>(
     "/products/search",
@@ -63,6 +69,8 @@ export const searchProducts = async (
         q: query,
         limit,
         skip,
+        ...(sortBy && { sortBy }),
+        ...(order && { order }),
       },
     }
   );
@@ -78,16 +86,24 @@ export const getCategories = async (): Promise<ProductCategory[]> => {
   return response.data;
 };
 
-export const getProductByCategories = async(category:string,limit:number,skip:number)
-:Promise<ProductsResponse>=>{
-    const response = await apiClient.get<ProductsResponse>(
-        `/products/category/${category}`,
-        {
-          params:{
-            limit,
-            skip
-          }
-        }
-    )
-    return response.data
-}
+export const getProductByCategories = async (
+  category: string,
+  limit: number,
+  skip: number,
+  sortBy?: string,
+  orderBy?: "asc" | "desc"
+): Promise<ProductsResponse> => {
+  const response = await apiClient.get<ProductsResponse>(
+    `/products/category/${category}`,
+    {
+      params: {
+        limit,
+        skip,
+        ...(sortBy && { sortBy }),
+        ...(orderBy && { orderBy }),
+      },
+    }
+  );
+
+  return response.data;
+};
