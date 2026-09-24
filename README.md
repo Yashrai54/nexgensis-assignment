@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Setup Steps
 
-## Getting Started
+### 1. Clone the repository
 
-First, run the development server:
+```bash
+git clone <repository-url>
+cd <project-directory>
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Open the application
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Visit:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```text
+http://localhost:3000
+```
 
-## Learn More
+# Features
 
-To learn more about Next.js, take a look at the following resources:
+### 1. Centralized API Client
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* A shared Axios client is used for all API requests.
+* Request interceptor automatically attaches the Bearer access token to authenticated requests.
+* Response interceptor provides centralized handling of API errors.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Authentication
 
-## Deploy on Vercel
+* Log in using the provided DummyJSON credentials.
+* Access and refresh tokens are stored after successful authentication.
+* Protected product routes redirect unauthenticated users to the login page.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 3. Product Management
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* Product listing with image, title, category, price, rating, and stock.
+* Responsive table view for desktop and card view for mobile.
+* On clicking the product title, we show product details including image, description, title, reviews, and edit and delete buttons.
+* Add new products.
+* Form validation for product creation and editing.
+* Confirmation before deleting a product.
+
+### 4. Search, Filter & Sort
+
+* Debounced product search.
+* Category filtering.
+* Sorting by price, rating, and title.
+* Search, filter, sort, pagination, and page size are reflected in the URL.
+* Since DummyJSON doesnt support Search and filter at the same time, i have priortized filters taking example of most E-commerce UXs where products are split into categories and search is done within those categorized products.
+* On entering wrong values in URL, it doesnt break the page and takes to the correct safe page.
+
+### 5. Pagination
+
+* API-based pagination using `limit` and `skip`.
+* Page navigation with Previous/Next controls.
+* Configurable page sizes: 10, 20, and 50.
+* Displays the current page and total pages.
+
+### 6. Product Details
+
+* Dedicated product details page.
+* Product images, description, price, and reviews.
+* Handles invalid product IDs with a not-found state.
+
+### 7. Error & Loading States
+
+* Loading states for API requests.
+* Empty states when no products match the current search/filter.
+* Error states with Retry actions.
+* Invalid URL parameters fall back to safe default values.
+
+### 8. API Mutation Handling
+
+DummyJSON's mutation endpoints do not persist changes. Successful add, edit, and delete operations are therefore reflected through local application state so that the UI remains consistent during the current session.
+
+### 9. Race Condition Handling
+
+Search requests are debounced and previous requests are cancelled when a newer request becomes relevant, preventing stale API responses from overwriting newer search results.
